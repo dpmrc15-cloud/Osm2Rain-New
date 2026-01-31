@@ -1,0 +1,65 @@
+name: osm2_app
+description: A new Flutter project.
+publish_to: 'none'
+version: 3.16.9+18
+
+environment:
+  sdk: ">=3.3.0 <4.0.0" # รองรับ Dart 3.x
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  fluttertoast: ^8.2.8
+  intl: ^0.20.2
+  http: ^1.2.2
+  flutter_spinkit: ^5.2.1
+  shared_preferences: ^2.3.2
+  flutter_map: ^6.1.0
+  geolocator: ^13.0.1
+  flutter_signin_button: ^2.0.0
+  google_sign_in: ^6.2.1
+  image_picker: ^1.1.2
+  url_launcher: ^6.3.0
+  flutter_datetime_picker_plus: ^2.1.0
+  font_awesome_flutter: ^10.7.0
+  firebase_core: ^4.3.0   # ✅ ล่าสุดที่มีจริง และรองรับ firebase_messaging 15.x
+  firebase_messaging: ^16.1.0
+  flutter_local_notifications: ^17.2.2
+  device_info_plus: ^10.1.2
+  marquee: ^2.2.3
+  xml: ^6.5.0
+  html_unescape: ^2.0.0
+  geocoding: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.1
+
+dependency_overrides:
+  win32: ^5.11.0
+  fading_edge_scrollview: ^4.0.0
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "lib/asset/imgs/icon-app.png"
+  adaptive_icon_background: "#ffffff"   # ✅ เพิ่มพื้นหลังสำหรับ Android 10
+  adaptive_icon_foreground: "lib/asset/imgs/icon-app.png" # ✅ ใช้ foreground
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: Kanit
+      fonts:
+        - asset: lib/asset/fonts/Kanit-Regular.ttf
+        - asset: lib/asset/fonts/Kanit-Italic.ttf
+          style: italic
+        - asset: lib/asset/fonts/Kanit-Bold.ttf
+          weight: 600
+  assets:
+    - lib/asset/imgs/
