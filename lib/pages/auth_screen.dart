@@ -52,6 +52,24 @@ class _AuthScreenState extends State<AuthScreen> {
     _loadStormTrack();
   }
 
+  // ฟังก์ชันช่วยเลือกสีและข้อความตามระดับ AQI
+  Map<String, dynamic> _getAqiStatus(int aqi) {
+    if (aqi <= 25) return {'color': Colors.lightBlue, 'label': 'ดีมาก'};
+    if (aqi <= 50) return {'color': Colors.green, 'label': 'ดี'};
+    if (aqi <= 100) return {'color': Colors.yellow[700], 'label': 'ปานกลาง'};
+    if (aqi <= 200) return {'color': Colors.orange, 'label': 'เริ่มมีผลกระทบ'};
+    return {'color': Colors.red, 'label': 'มีผลกระทบต่อสุขภาพ'};
+  }
+
+  // ฟังก์ชันช่วยเลือกสีตามระดับ PM 2.5
+  Color _getPm25Color(double pm25) {
+    if (pm25 <= 15.0) return Colors.lightBlue;
+    if (pm25 <= 25.0) return Colors.green;
+    if (pm25 <= 37.5) return Colors.yellow[700]!;
+    if (pm25 <= 75.0) return Colors.orange;
+    return Colors.red;
+  }
+
   Future<void> _checkLocationPermission() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -81,14 +99,11 @@ class _AuthScreenState extends State<AuthScreen> {
       await _checkLocationPermission();
       Position pos = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high);
-
       final data = await AirQualityService()
           .fetchNearestStation(pos.latitude, pos.longitude);
-
       setState(() {
         _nearestStation = data;
       });
-
       if (data["province"] != null) {
         _loadForecast(data["province"]);
       }
@@ -157,7 +172,6 @@ class _AuthScreenState extends State<AuthScreen> {
         "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year + 543}";
     final formattedTime =
         "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
-
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -204,7 +218,7 @@ class _AuthScreenState extends State<AuthScreen> {
         // การ์ดคุณภาพอากาศ
         _buildInfoCard(
           icon: Icons.air,
-          iconColor: Colors.green,
+          iconColor: Colors.blue,
           title: "คุณภาพอากาศ",
           child: _loadingAir
               ? const LinearProgressIndicator()
@@ -219,37 +233,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   _nearestStation!['aqi'] == 0)
                               ? const Text("❌ สถานีนี้ไม่มีรายงานข้อมูลล่าสุด",
                                   style: TextStyle(color: Colors.red))
-                              : Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                        "${_nearestStation!['province']} - ${_nearestStation!['station_name']}",
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18)),
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text("AQI: ${_nearestStation!['aqi']}",
-                                            style: const TextStyle(
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.blueAccent,
-                                            )),
-                                        const SizedBox(width: 20),
-                                        Text(
-                                            "PM2.5: ${_nearestStation!['pm25']} µg/m³",
-                                            style: const TextStyle(
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.red,
-                                            )),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                              : _buildAqiContent(),
         ),
         const SizedBox(height: 12),
         // การ์ดสภาพอากาศ
@@ -286,8 +270,66 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
         ),
         const SizedBox(height: 12),
-        // ข้อความวิ่งเส้นทางพายุ
         _buildStormMarquee(),
+      ],
+    );
+  }
+
+  // ส่วนแสดงเนื้อหา AQI ที่มีสีสัน
+  Widget _buildAqiContent() {
+    final aqi = _nearestStation!['aqi'] ?? 0;
+    final pm25 = double.tryParse(_nearestStation!['pm25'].toString()) ?? 0.0;
+    final status = _getAqiStatus(aqi);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+            "${_nearestStation!['province']} - ${_nearestStation!['station_name']}",
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            color: status['color'],
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            status['label'],
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Column(
+              children: [
+                const Text("AQI", style: TextStyle(fontSize: 12)),
+                Text("$aqi",
+                    style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: status['color'])),
+              ],
+            ),
+            const SizedBox(width: 40),
+            Column(
+              children: [
+                const Text("PM2.5", style: TextStyle(fontSize: 12)),
+                Text("${pm25.toStringAsFixed(1)}",
+                    style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: _getPm25Color(pm25))),
+              ],
+            ),
+          ],
+        ),
+        const Text("หน่วย: µg/m³",
+            style: TextStyle(fontSize: 10, color: Colors.grey)),
       ],
     );
   }
@@ -311,14 +353,8 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _buildStormMarquee() {
-    if (_loadingStorm) {
-      return const LinearProgressIndicator();
-    }
-
+    if (_loadingStorm) return const LinearProgressIndicator();
     final hasNew = _stormMessage != null && _stormMessage!.isNotEmpty;
-    final colors = [Colors.red, Colors.blue, Colors.green, Colors.orange];
-    final colorIndex = DateTime.now().second % colors.length;
-
     return Container(
       height: 45,
       decoration: BoxDecoration(
@@ -327,12 +363,11 @@ class _AuthScreenState extends State<AuthScreen> {
         border: Border.all(color: Colors.red[100]!),
       ),
       child: Marquee(
-        text: hasNew ? "🆕 NEW | 🌪️ ${_stormMessage!}" : "🌪️ ไม่มีข้อมูลพายุ",
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.bold,
-          color: colors[colorIndex],
-        ),
+        text: hasNew
+            ? "🌪️ ข้อมูลพายุ: ${_stormMessage!}"
+            : "🌪️ ไม่มีรายงานข้อมูลพายุ",
+        style: const TextStyle(
+            fontSize: 14, fontWeight: FontWeight.bold, color: Colors.red),
         scrollAxis: Axis.horizontal,
         blankSpace: 50.0,
         velocity: 40.0,
@@ -381,12 +416,12 @@ class _AuthScreenState extends State<AuthScreen> {
         const Text(
           "APPLICATION รายงานข้อมูล",
           style: TextStyle(
-              fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+              fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 1.1),
         ),
         const Text(
           "แหล่งน้ำชุมชน และ ปริมาณน้ำฝน",
           style: TextStyle(
-              fontSize: 18,
+              fontSize: 17,
               color: Colors.blueAccent,
               fontWeight: FontWeight.w600),
         ),
@@ -394,21 +429,21 @@ class _AuthScreenState extends State<AuthScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset("lib/asset/imgs/osm2-icon.png", height: 90, width: 90),
+            Image.asset("lib/asset/imgs/osm2-icon.png", height: 80, width: 80),
             const SizedBox(width: 20),
             Image.asset("lib/asset/imgs/main-image-v2-3.png",
-                height: 90, width: 90),
+                height: 80, width: 80),
           ],
         ),
         const SizedBox(height: 20),
         const Text(
           "ศูนย์ป้องกันและบรรเทาสาธารณภัย เขต 15 เชียงราย",
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
         ),
         const Text(
           "กรมป้องกันและบรรเทาสาธารณภัย",
-          style: TextStyle(fontSize: 14, color: Colors.black54),
+          style: TextStyle(fontSize: 13, color: Colors.black54),
         ),
       ],
     );
@@ -420,7 +455,7 @@ class _AuthScreenState extends State<AuthScreen> {
         ElevatedButton(
           onPressed: () => _onLoginWithGoogle(context),
           style: ElevatedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 55),
+            minimumSize: const Size(double.infinity, 50),
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
             shape: RoundedRectangleBorder(
@@ -429,14 +464,14 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
           ),
           child: const Text("เข้าสู่ระบบด้วย Google",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         ),
-        const SizedBox(height: 15),
+        const SizedBox(height: 12),
         ElevatedButton(
           onPressed: () =>
               Navigator.pushReplacementNamed(context, LoginScreen.ROUTE_ID),
           style: ElevatedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 55),
+            minimumSize: const Size(double.infinity, 50),
             backgroundColor: Colors.blueAccent,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
@@ -444,7 +479,7 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
           ),
           child: const Text("เข้าสู่ระบบด้วยเบอร์โทรศัพท์",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         ),
       ],
     );
