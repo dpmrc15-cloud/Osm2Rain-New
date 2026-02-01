@@ -52,22 +52,38 @@ class _AuthScreenState extends State<AuthScreen> {
     _loadStormTrack();
   }
 
-  // ฟังก์ชันช่วยเลือกสีและข้อความตามระดับ AQI
+// 1. ปรับในฟังก์ชัน _getAqiStatus
   Map<String, dynamic> _getAqiStatus(int aqi) {
-    if (aqi <= 25) return {'color': Colors.lightBlue, 'label': 'ดีมาก'};
-    if (aqi <= 50) return {'color': Colors.green, 'label': 'ดี'};
-    if (aqi <= 100) return {'color': Colors.yellow[700], 'label': 'ปานกลาง'};
-    if (aqi <= 200) return {'color': Colors.orange, 'label': 'เริ่มมีผลกระทบ'};
-    return {'color': Colors.red, 'label': 'มีผลกระทบต่อสุขภาพ'};
+    if (aqi <= 25)
+      return {'color': const Color(0xFF33CCFF), 'label': 'ดีมาก'}; // ฟ้าตามรูป
+    if (aqi <= 50)
+      return {
+        'color': const Color(0xFF99CC33),
+        'label': 'ดี'
+      }; // เขียวอ่อนตามรูป
+    if (aqi <= 100)
+      return {
+        'color': const Color(0xFFFFEE00),
+        'label': 'ปานกลาง'
+      }; // เหลืองสว่าง (แก้ที่นี่)
+    if (aqi <= 200)
+      return {
+        'color': const Color(0xFFFF9900),
+        'label': 'เริ่มมีผลกระทบ'
+      }; // ส้ม
+    return {
+      'color': const Color(0xFFFF3333),
+      'label': 'มีผลกระทบต่อสุขภาพ'
+    }; // แดง
   }
 
-  // ฟังก์ชันช่วยเลือกสีตามระดับ PM 2.5
+// 2. ปรับในฟังก์ชัน _getPm25Color
   Color _getPm25Color(double pm25) {
-    if (pm25 <= 15.0) return Colors.lightBlue;
-    if (pm25 <= 25.0) return Colors.green;
-    if (pm25 <= 37.5) return Colors.yellow[700]!;
-    if (pm25 <= 75.0) return Colors.orange;
-    return Colors.red;
+    if (pm25 <= 15.0) return const Color(0xFF33CCFF);
+    if (pm25 <= 25.0) return const Color(0xFF99CC33);
+    if (pm25 <= 37.5) return const Color(0xFFFFEE00); // สีเหลืองที่ถูกต้อง
+    if (pm25 <= 75.0) return const Color(0xFFFF9900);
+    return const Color(0xFFFF3333);
   }
 
   Future<void> _checkLocationPermission() async {
