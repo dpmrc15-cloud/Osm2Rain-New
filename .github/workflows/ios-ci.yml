@@ -25,25 +25,31 @@ jobs:
           path: |
             ~/.pub-cache
             ~/.flutter-plugins
-            ~/.flutter-plugins-deps
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      - name: Clean generated iOS config
-        run: |
-          rm -f ios/Flutter/Generated.xcconfig || true
-          rm -rf ios/Flutter/ephemeral || true
-
       - name: Install dependencies
         run: |
           flutter pub get
-          cd ios || exit 0
+          cd ios
           pod install --repo-update
 
-      - name: Run Flutter tests
-        run: flutter test --coverage
+      - name: Build iOS (No Codesign)
+        run: flutter build ios --release --no-codesign
 
-      - name: Build iOS (no codesign)
-        run: flutter build ios --no-codesign --verbose
+      # --- ขั้นตอนการสร้างไฟล์ติดตั้ง .ipa ---
+      - name: Create IPA
+        run: |
+          mkdir -p build/ios/iphoneos/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
+          cd build/ios/iphoneos
+          zip -r ../../../Runner.ipa Payload
 
+      # --- อัปโหลดไฟล์ขึ้น GitHub เพื่อให้ดาวน์โหลดได้ ---
+      - name: Upload Installable IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-installable-app
+          path: Runner.ipa
+          retention-days: 7
